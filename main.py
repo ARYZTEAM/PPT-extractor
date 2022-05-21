@@ -102,7 +102,9 @@ def ispptorpptx(fullfilename):
     if fullfilename.endswith('.ppt'):
         ppt.ppttopptx(fullfilename)
         node = ppttree.get_node(fullfilename)
+        temp = node.tag + "x"
         ppttree.update_node(node.identifier, identifier=fullfilename + "x")
+        ppttree.update_node(node.identifier, tag = temp)
         # output = node.identifier
         # output = output.removesuffix(".pptx")
         # output = output[output.rfind("\\")+1:]
@@ -137,21 +139,22 @@ def start_extract(filepath):
         os.rename(filepath, filepath[:filepath.rfind("\\")] + "\\" + "file" + str(fileindex) + ".pptx")
         filepath = filepath[:filepath.rfind("\\")] + "\\" + "file" + str(fileindex) + ".pptx"
         fileindex += 1
-        ppttree.create_node(tag=filepath, identifier=filepath)
+        ppttree.create_node(tag=filepath, identifier=filepath,data=1)
         #        ispptorpptx(filepath)
         if weather_extract(filepath):
             levels = 1
-            if ppttree.size(levels) > 0:
+            while ppttree.size(levels) > 0:
                 # 待优化通过添加过滤条件加快查找速度
                 for i in ppttree.expand_tree():
                     if ppttree.level(i) == levels:
                         ispptorpptx(i)
+                levels += 1
 
-            print("-"*50)
-
-            for i in ppttree.expand_tree():
-                print(f"i:{i} data:{ppttree.get_node(i).data}")
-            print("-"*50)
+            # print("-"*50)
+            #
+            # for i in ppttree.expand_tree():
+            #     print(f"i:{i} data:{ppttree.get_node(i).data}")
+            # print("-"*50)
 
     else:
         print("非pptx文件，先转化为pptx文件")
