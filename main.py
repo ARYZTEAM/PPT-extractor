@@ -68,7 +68,6 @@ def weather_extract(fullfilename):
         exit(1)
     global dirindex
     output = "dir" + str(dirindex)
-    dirindex += 1
     des_filename = fullfilename[:fullfilename.rfind(".")] + ".zip"
     os.system("copy" + " " + fullfilename + " " + des_filename)
     zip_f = zipfile.ZipFile(des_filename)
@@ -81,6 +80,7 @@ def weather_extract(fullfilename):
         for j in to_be_extracted:
             zip_f.extract(j, output)  # 第二个参数指定输出目录，此处保存在当前目录下的output文件夹中
         zip_f.close()
+        dirindex += 1
         os.chdir(os.getcwd() + "\\" + output)
         os.system("move" + " " + os.getcwd() + "\\ppt\\embeddings\\*" + " " + os.getcwd())
         os.system("RMDIR /S/Q" + " " + os.getcwd() + "\\ppt")
@@ -147,15 +147,12 @@ def start_extract(filepath):
                     if ppttree.level(i) == levels:
                         ispptorpptx(i)
 
-            for i in ppttree.expand_tree(filter=lambda x: x.data == 0):
-                print(i)
-            print("上面是0的")
-            for i in ppttree.expand_tree(filter=lambda x: x.data == 1):
-                print(i)
-            print("上面是1的")
-            for i in ppttree.expand_tree(filter=lambda x: x.data is None):
-                print(i)
-            print("上面是None的")
+            print("-"*50)
+
+            for i in ppttree.expand_tree():
+                print(f"i:{i} data:{ppttree.get_node(i).data}")
+            print("-"*50)
+
     else:
         print("非pptx文件，先转化为pptx文件")
 
