@@ -104,7 +104,7 @@ def ispptorpptx(fullfilename):
         node = ppttree.get_node(fullfilename)
         temp = node.tag + "x"
         ppttree.update_node(node.identifier, identifier=fullfilename + "x")
-        ppttree.update_node(node.identifier, tag = temp)
+        ppttree.update_node(node.identifier, tag=temp)
         # output = node.identifier
         # output = output.removesuffix(".pptx")
         # output = output[output.rfind("\\")+1:]
@@ -139,7 +139,7 @@ def start_extract(filepath):
         os.rename(filepath, filepath[:filepath.rfind("\\")] + "\\" + "file" + str(fileindex) + ".pptx")
         filepath = filepath[:filepath.rfind("\\")] + "\\" + "file" + str(fileindex) + ".pptx"
         fileindex += 1
-        ppttree.create_node(tag=filepath, identifier=filepath,data=1)
+        ppttree.create_node(tag=filepath, identifier=filepath, data=1)
         #        ispptorpptx(filepath)
         if weather_extract(filepath):
             levels = 1
