@@ -1,41 +1,45 @@
 import os
 import ppt
-from treelib import Node,Tree
+from treelib import Tree
 import zipfile
 
+# 最终生成的文件树
+# 其节点的identifier和tag都是文件的路径
 ppttree = Tree()
+dirindex = 0
+fileindex = 0
 
 
-#输入zip文件的完全路径，和指定解压的文件夹,运行目录的子文件下
-def extract_zip(zip_filename,extract_path):
-    if(os.path.exists(zip_filename) is False):
-        print("解压的ZIP文件不存在")
-        exit(1)
-
-    zip_f = zipfile.ZipFile(zip_filename)
-    list_zip_f = zip_f.namelist()  # zip文件中的文件列表名
-    for zip_fn in list_zip_f:
-        zip_f.extract(zip_fn, extract_path)  # 第二个参数指定输出目录，此处保存在当前目录
-    zip_f.close()
-
-
-##待解决节点添加问题
-def rename_all_files(directorys,parentnode):
+# 待解决节点添加问题
+def rename_all_files(directorys, parentnode):
+    """
+    该函数会重命名embeding文件夹中解压出来的文件，并更改文件的扩展名: bin->ppt，并将其加入树节点
+    而对于ppt和pptx文件则直接加入树节点
+    遇到不是ppt，pptx，bin文件则会直接报错退出
+    :param directorys: 文件夹
+    :param parentnode:父节点
+    """
     to_be_renamed = os.listdir(directorys)
+    global fileindex
     for i in to_be_renamed:
+        # 判断文件的大小不为0
         if os.path.getsize(directorys + "\\" + i) != 0:
-            if(i[i.rfind("."):] == ".bin"):
-                os.rename(directorys + "\\"  + i,directorys + "\\"  + i[:i.rfind(".")] + ".ppt")
-                ppttree.create_node(tag=i[:i.rfind(".")] + ".ppt",identifier=directorys + "\\"  + i[:i.rfind(".")] + ".ppt",parent=parentnode)
+            os.rename(directorys + "\\" + i, directorys + "\\" + "file" + str(fileindex) + i[i.rfind("."):])
+            i = "file" + str(fileindex) + i[i.rfind("."):]
+            fileindex += 1
+            if i[i.rfind("."):] == ".bin":
+                os.rename(directorys + "\\" + i, directorys + "\\" + i[:i.rfind(".")] + ".ppt")
+                ppttree.create_node(tag=i[:i.rfind(".")] + ".ppt",
+                                    identifier=directorys + "\\" + i[:i.rfind(".")] + ".ppt", parent=parentnode)
 
-            elif(i[i.rfind("."):] == ".ppt"):
+            elif i[i.rfind("."):] == ".ppt":
                 ppttree.create_node(tag=i, identifier=directorys + "\\" + i, parent=parentnode)
 
-            elif(i[i.rfind("."):] == ".pptx"):
+            elif i[i.rfind("."):] == ".pptx":
                 ppttree.create_node(tag=i, identifier=directorys + "\\" + i, parent=parentnode)
             else:
-                if(os.path.isdir(directorys + "\\" + i)):
-                    ppttree.create_node(tag=i, identifier=directorys + "\\" + i,parent=parentnode)
+                if os.path.isdir(directorys + "\\" + i):
+                    ppttree.create_node(tag=i, identifier=directorys + "\\" + i, parent=parentnode)
                 else:
                     print(directorys + "\\" + i)
                     print("异常：发现特殊类型的文件在embeddings中，退出处理")
@@ -45,24 +49,27 @@ def rename_all_files(directorys,parentnode):
                 os.system("del" + " " + directorys + "\\" + i)
             except:
                 pass
-            #os.system("del" + " " + i)
+            # os.system("del" + " " + i)
 
 
-#输入一个PPTX文件查看是否解压，output是解压目录
+# 输入一个PPTX文件查看是否解压，output是解压目录
 def weather_extract(fullfilename):
+    """
+    输入一个PPTX文件，判断embedding中是否嵌入了文件
+    如果能够解压，则解压到目标文件的同一文件夹下，文件夹名字为dir+dirindex
+    解压后调用rename函数重命名解压后的文件
+    :param fullfilename:
+    :return: 真或者假
+    """
     if os.path.isdir(fullfilename[:fullfilename.rfind("\\")]):
         os.chdir(fullfilename[:fullfilename.rfind("\\")])
     else:
-        print("weather_extract不是文件夹")
+        print("weather_extract：无法移动到待解压PPTX文件的目录下")
         exit(1)
-    output = fullfilename
-    output = output.removesuffix(".pptx")
-    output = output[output.rfind("\\")+1:]
-    if len(output) == 0:
-        print("文件输出路径错误")
-        exit(1)
-
-    des_filename = fullfilename.removesuffix(".pptx") + ".zip"
+    global dirindex
+    output = "dir" + str(dirindex)
+    dirindex += 1
+    des_filename = fullfilename[:fullfilename.rfind(".")] + ".zip"
     os.system("copy" + " " + fullfilename + " " + des_filename)
     zip_f = zipfile.ZipFile(des_filename)
     list_zip_f = zip_f.namelist()  # zip文件中的文件列表名
@@ -70,45 +77,45 @@ def weather_extract(fullfilename):
     for i in list_zip_f:
         if "ppt/embeddings" in i:
             to_be_extracted.append(i)
-    if len(to_be_extracted) != 0 :
+    if len(to_be_extracted) != 0:
         for j in to_be_extracted:
-            zip_f.extract(j,output)  # 第二个参数指定输出目录，此处保存在当前目录
+            zip_f.extract(j, output)  # 第二个参数指定输出目录，此处保存在当前目录下的output文件夹中
         zip_f.close()
         os.chdir(os.getcwd() + "\\" + output)
-        os.system("move" + " " +os.getcwd() + "\\ppt\\embeddings\\*" + " " + os.getcwd())
+        os.system("move" + " " + os.getcwd() + "\\ppt\\embeddings\\*" + " " + os.getcwd())
         os.system("RMDIR /S/Q" + " " + os.getcwd() + "\\ppt")
-        ##这里必须大写的Q
-        rename_all_files(os.getcwd(),fullfilename)
+        # 这里必须大写的Q
+        rename_all_files(os.getcwd(), fullfilename)
         return True
     else:
         zip_f.close()
         return False
 
 
-
-
-
-
 def ispptorpptx(fullfilename):
-
-    if(fullfilename.endswith('.ppt')):
+    """
+    输入PPT或者PPTX文件，对于PPT文件将会执行PPT转换为PPTX后将其节点更新为PPTX后判断是否内部
+    还有嵌入的PPT文件，如果有的话，更新节点的data为1，否则为0
+    对于PPTX直接判断是否能够解压，如果可以的话更新data为1，否则为0
+    :param fullfilename:
+    """
+    if fullfilename.endswith('.ppt'):
         ppt.ppttopptx(fullfilename)
         node = ppttree.get_node(fullfilename)
-        ppttree.update_node(node.identifier,identifier= fullfilename + "x")
+        ppttree.update_node(node.identifier, identifier=fullfilename + "x")
         # output = node.identifier
         # output = output.removesuffix(".pptx")
         # output = output[output.rfind("\\")+1:]
         # if len(output) == 0:
         #     print("文件输出路径错误")
         #     exit(1)
-        if weather_extract(node.identifier):
-            ppttree.update_node(node.identifier,data=1)
-            print("尝试更改"+node.identifier+"的数据")
+        if weather_extract(fullfilename + "x"):
+            ppttree.update_node(fullfilename + "x", data=1)
 
         else:
-            ppttree.update_node(node.identifier,data=0)
+            ppttree.update_node(fullfilename + "x", data=0)
 
-    elif(fullfilename.endswith('.pptx')):
+    elif fullfilename.endswith('.pptx'):
         node = ppttree.get_node(fullfilename)
         # output = node.identifier
         # output = output.removesuffix(".pptx")
@@ -117,41 +124,38 @@ def ispptorpptx(fullfilename):
         #     print("文件输出路径错误")
         #     exit(1)
         if weather_extract(node.identifier):
-            ppttree.update_node(node.identifier,data=1)
-            print("尝试更改"+node.identifier+"的数据为1")
+            ppttree.update_node(node.identifier, data=1)
         else:
-            ppttree.update_node(node.identifier,data=0)
+            ppttree.update_node(node.identifier, data=0)
     else:
         print()
 
 
-def data_tree():
-    ppttree = Tree()
-    ppttree.create_node("harrt","whatisthis")
-    ppttree.show()
-
-
 def start_extract(filepath):
-    if(filepath.endswith('.pptx')):
-        ppttree.create_node(tag=filepath,identifier=filepath)
-#        ispptorpptx(filepath)
-        if (weather_extract(filepath)):
+    global fileindex
+    if filepath.endswith('.pptx'):
+        os.rename(filepath, filepath[:filepath.rfind("\\")] + "\\" + "file" + str(fileindex) + ".pptx")
+        filepath = filepath[:filepath.rfind("\\")] + "\\" + "file" + str(fileindex) + ".pptx"
+        fileindex += 1
+        ppttree.create_node(tag=filepath, identifier=filepath)
+        #        ispptorpptx(filepath)
+        if weather_extract(filepath):
             levels = 1
-            if(ppttree.size(levels) > 0 ):
-                ##待优化通过添加过滤条件加快查找速度
+            if ppttree.size(levels) > 0:
+                # 待优化通过添加过滤条件加快查找速度
                 for i in ppttree.expand_tree():
-                    if(ppttree.level(i) == levels):
+                    if ppttree.level(i) == levels:
                         ispptorpptx(i)
 
-            for i in ppttree.expand_tree(filter=lambda x:x.data ==0):
+            for i in ppttree.expand_tree(filter=lambda x: x.data == 0):
                 print(i)
             print("上面是0的")
-            for i in ppttree.expand_tree(filter=lambda x:x.data ==None):
+            for i in ppttree.expand_tree(filter=lambda x: x.data == 1):
+                print(i)
+            print("上面是1的")
+            for i in ppttree.expand_tree(filter=lambda x: x.data is None):
                 print(i)
             print("上面是None的")
-
-
-
     else:
         print("非pptx文件，先转化为pptx文件")
 
