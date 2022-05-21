@@ -161,6 +161,5 @@ def start_extract(filepath):
 
 
 if __name__ == "__main__":
-    print("hello world")
     start_extract("C:\\Users\\Administrator\\Documents\\ppttest\\OS1.pptx")
     ppttree.show()
