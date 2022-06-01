@@ -9,7 +9,6 @@ ppttree = Tree()
 dirindex = 0
 fileindex = 0
 tmpdir = ""
-
 # 待解决节点添加问题
 def rename_all_files(directorys, parentnode):
     """
@@ -91,34 +90,19 @@ def weather_extract(fullfilename):
         zip_f.close()
         return False
 
-def convert2pptx(fullfilename):
+
+def repackppt(fullfilename):
     """
     将PPT转化为PPTX，由于某些原因需要重新用zipfile解压再压缩下ppt才能被识别
     步骤：
-        保存getcwd
-        复制fullfilename到temp
-        cwd切换为temp
-        repack ppt
-        复制ppt到fullfilename
-        还原getcwd
+        解压fullfilename到tmp
+        mv tmp/Package到fullfilename
     :param fullfilename:
     """
     global tmpdir
-    cwd = os.getcwd()
-    os.system("copy" + " " + fullfilename + " " + tmpdir+"\\tmp.ppt")
-    os.chdir(tmpdir)
-    with zipfile.ZipFile(".\\tmp.ppt") as to_repack:
-        pack_list = to_repack.namelist()
-        for i in pack_list:
-            print(i)
-            to_repack.extract(i)
-    with zipfile.ZipFile(".\\tmp.ppt", "w") as repack:
-        for i in pack_list:
-            repack.write(i)
-            os.remove(i)
-    os.system("copy" + " " + tmpdir + "\\tmp.ppt" + " " + fullfilename)
-    os.chdir(cwd)
-    ppt.ppttopptx(fullfilename)
+    os.system("7z e "+fullfilename+" -o" + tmpdir+" Package")
+    if os.path.exists(tmpdir+"\\Package"):
+        os.system("move" + " " + tmpdir + "\\Package" + " " + fullfilename)
 
 def ispptorpptx(fullfilename):
     """
@@ -128,7 +112,8 @@ def ispptorpptx(fullfilename):
     :param fullfilename:
     """
     if fullfilename.endswith('.ppt'):
-        convert2pptx(fullfilename)
+        repackppt(fullfilename)
+        ppt.ppttopptx(fullfilename)
         node = ppttree.get_node(fullfilename)
         temp = node.tag + "x"
         ppttree.update_node(node.identifier, identifier=fullfilename + "x")
@@ -141,12 +126,6 @@ def ispptorpptx(fullfilename):
 
     elif fullfilename.endswith('.pptx'):
         node = ppttree.get_node(fullfilename)
-        # output = node.identifier
-        # output = output.removesuffix(".pptx")
-        # output = output[output.rfind("\\")+1:]
-        # if output is None:
-        #     print("文件输出路径错误")
-        #     exit(1)
         if weather_extract(node.identifier):
             ppttree.update_node(node.identifier, data=1)
         else:
@@ -159,7 +138,7 @@ def init_tmp(filepath):
     tmpdir = filepath[:filepath.rfind("\\")] +"\\tmp"
     if not os.path.exists(tmpdir):
         os.mkdir(tmpdir)
-
+# 优化查找逻辑    ppttree.filter_nodes(lambda x:x.tag == "file"+str(fileindex))
 def start_extract(filepath):
     init_tmp(filepath)
     global fileindex
@@ -182,11 +161,6 @@ def start_extract(filepath):
                 print("*"*50)
                 levels += 1
 
-            # print("-"*50)
-            #
-            # for i in ppttree.expand_tree():
-            #     print(f"i:{i} data:{ppttree.get_node(i).data}")
-            # print("-"*50)
 
     else:
         print("非pptx文件，先转化为pptx文件")
